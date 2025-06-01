@@ -38,20 +38,28 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
 }) => {
   const { user } = useAuth();
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
-  const [comments, setComments] = useState<Comment[]>(initialComments);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const commentsContainerRef = useRef<HTMLDivElement>(null); // Ref for scrollable comments list
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentsCount, setCommentsCount] = useState(
     initialComments.length || initialCommentsCount
   );
-  const modalRef = useRef<HTMLDivElement>(null);
 
-  // Load comments from localStorage if not provided
+  // Load and sort comments
   useEffect(() => {
-    if (initialComments.length === 0 && user) {
+    let commentsToSet: Comment[] = [];
+
+    // Use initialComments if provided
+    if (initialComments.length > 0) {
+      commentsToSet = [...initialComments];
+    }
+    // Otherwise, load from localStorage
+    else if (user) {
       const storedComments = interactionStorage.getPostComments(postId);
       if (storedComments.length > 0) {
-        const formattedComments = storedComments.map(comment => ({
+        commentsToSet = storedComments.map(comment => ({
           id: comment.id,
           content: comment.content,
           username: comment.username || 'User',
@@ -59,12 +67,16 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
           createdAt: comment.createdAt,
           likesCount: comment.likesCount || 0,
           isLiked: interactionStorage.isCommentLiked(user.id, comment.id),
-          userId: comment.userId
+          userId: comment.userId,
         }));
-        setComments(formattedComments);
-        setCommentsCount(formattedComments.length);
       }
     }
+
+    // Sort comments by createdAt in descending order (newest first)
+    commentsToSet.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    setComments(commentsToSet);
+    setCommentsCount(commentsToSet.length);
   }, [postId, initialComments, user]);
 
   // Close modal on click outside
@@ -103,7 +115,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
     try {
       // Add comment to localStorage
       const comment = interactionStorage.addComment(user.id, postId, newComment.trim());
-      
+
       // Create comment object for UI
       const newCommentObj: Comment = {
         id: comment.id,
@@ -115,13 +127,22 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
         isLiked: false,
         userId: user.id,
       };
-      
+
+      // Prepend new comment to maintain newest-first order
       setComments((prev) => [newCommentObj, ...prev]);
       setCommentsCount((prev) => prev + 1);
       if (onCommentsCountChange) {
         onCommentsCountChange(commentsCount + 1);
       }
       setNewComment("");
+
+      // Scroll to top to show the new comment
+      if (commentsContainerRef.current) {
+        commentsContainerRef.current.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }
     } catch (error) {
       console.error("Error adding comment:", error);
     } finally {
@@ -132,19 +153,19 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
   // Like/unlike comment
   const handleLikeToggle = (commentId: number) => {
     if (!user) return;
-    
+
     setComments((prev) =>
       prev.map((comment) => {
         if (comment.id === commentId) {
           const newIsLiked = !comment.isLiked;
-          
+
           // Update in localStorage
           if (newIsLiked) {
             interactionStorage.likeComment(user.id, commentId);
           } else {
             interactionStorage.unlikeComment(user.id, commentId);
           }
-          
+
           return {
             ...comment,
             isLiked: newIsLiked,
@@ -164,19 +185,25 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4">
       <div
         ref={modalRef}
-        className="bg-white rounded-lg w-full max-w-md max-h-[90vh] flex flex-col animate-slide-up"
-        style={{ transform: "translateY(0)" }}
+        className="bg-white rounded-lg w-full max-w-[384px] h-[90vh] max-h-[600px] flex flex-col animate-slide-up overflow-hidden"
       >
         {/* Modal header */}
-        <div className="flex justify-between items-center p-4 border-b">
+        <div className="flex justify-between items-center p-4 border-b bg-white shrink-0">
           <h2 className="text-lg font-semibold">Comments</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+            aria-label="Close modal"
+          >
             <X size={24} />
           </button>
         </div>
 
         {/* Comments list */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div
+          ref={commentsContainerRef}
+          className="flex-1 overflow-y-auto p-4 bg-white comments-scrollable"
+        >
           {comments.length > 0 ? (
             <div className="space-y-4">
               {comments.map((comment) => (
@@ -195,7 +222,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+            <div className="flex flex-col items-center justify-center h-full text-gray-500">
               <MessageSquare size={48} className="mb-2" />
               <p>No comments yet. Be the first to comment!</p>
             </div>
@@ -203,12 +230,14 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
         </div>
 
         {/* New comment form */}
-        <div className="border-t p-4">
+        <div className="border-t p-4 bg-white shrink-0">
           <div className="flex gap-2">
             <Avatar className="h-8 w-8 flex-shrink-0">
               <AvatarImage src={user?.profileImage || ""} />
               <AvatarFallback>
-                {user?.username?.charAt(0).toUpperCase() || user?.name?.charAt(0).toUpperCase() || "U"}
+                {user?.username?.charAt(0).toUpperCase() ||
+                  user?.name?.charAt(0).toUpperCase() ||
+                  "U"}
               </AvatarFallback>
             </Avatar>
 

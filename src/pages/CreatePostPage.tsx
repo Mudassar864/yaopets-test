@@ -19,31 +19,56 @@ export default function CreatePostPage() {
   const [mediaType, setMediaType] = useState<"image" | "gif" | "video">("image");
   const [isCaptureModalOpen, setIsCaptureModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const { toast } = useToast();
   const { user } = useAuth();
   const [_, navigate] = useLocation();
+
+  // Convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
 
   const goBack = () => {
     navigate("/");
   };
 
-  const handleMediaSelected = (url: string, type: "image" | "gif" | "video") => {
+  const handleMediaSelected = async (url: string, type: "image" | "gif" | "video") => {
     setMediaUrl(url);
     setMediaType(type);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.type.startsWith("image/")) {
-        const url = URL.createObjectURL(file);
-        setMediaUrl(url);
-        setMediaType(file.type === "image/gif" ? "gif" : "image");
+        try {
+          const base64 = await fileToBase64(file);
+          setMediaUrl(base64);
+          setMediaType(file.type === "image/gif" ? "gif" : "image");
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to process the image.",
+            variant: "destructive",
+          });
+        }
       } else if (file.type.startsWith("video/")) {
-        const url = URL.createObjectURL(file);
-        setMediaUrl(url);
-        setMediaType("video");
+        try {
+          const base64 = await fileToBase64(file);
+          setMediaUrl(base64);
+          setMediaType("video");
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to process the video.",
+            variant: "destructive",
+          });
+        }
       } else {
         toast({
           title: "Invalid file type",
@@ -76,7 +101,8 @@ export default function CreatePostPage() {
       const postData = {
         userId: user?.id,
         content: description,
-        mediaUrls: [mediaUrl],
+        mediaUrls: [mediaUrl], // Store base64 string
+        mediaType, // Include media type for rendering
         location: location ? { address: location } : null,
         visibilityType: isPublic ? "public" : "private",
         postType: "regular",

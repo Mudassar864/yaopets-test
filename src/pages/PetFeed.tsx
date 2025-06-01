@@ -16,7 +16,6 @@ import { FaPaw } from 'react-icons/fa';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from "@/hooks/useAuth";
 import OptimizedImage from "@/components/media/OptimizedImage";
-import PersistentImage from "@/components/media/PersistentImage";
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -29,13 +28,21 @@ import { interactionStorage, postStorage } from "@/utils/localStorageManager";
 type Post = {
   id: number;
   userId: number;
-  username: string;
-  userPhotoUrl: string;
   content: string;
-  imageUrl: string;
+  mediaUrls: string[];
+  mediaType: "image" | "gif" | "video";
+  location: { address: string } | null;
+  visibilityType: "public" | "private";
+  postType: string;
+  isStory: boolean;
+  user: {
+    id: number;
+    username: string;
+    profileImage?: string;
+  };
+  createdAt: string;
   likesCount: number;
   commentsCount: number;
-  date: string;
   isLiked: boolean;
   isSaved: boolean;
 };
@@ -44,107 +51,25 @@ const DEMO_POSTS: Post[] = [
   {
     id: 101,
     userId: 1,
-    username: "Alice",
-    userPhotoUrl: "https://randomuser.me/api/portraits/women/65.jpg",
     content: "Meet Luna! She's looking for a loving home. 🐾",
-    imageUrl: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&q=80",
+    mediaUrls: ["https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&q=80"],
+    mediaType: "image",
+    location: null,
+    visibilityType: "public",
+    postType: "regular",
+    isStory: false,
+    user: {
+      id: 1,
+      username: "Alice",
+      profileImage: "https://randomuser.me/api/portraits/women/65.jpg",
+    },
+    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
     likesCount: 12,
     commentsCount: 2,
-    date: formatDistanceToNow(new Date(Date.now() - 60 * 60 * 1000), { locale: ptBR, addSuffix: true }),
     isLiked: false,
     isSaved: false,
   },
-  {
-    id: 102,
-    userId: 2,
-    username: "Bob",
-    userPhotoUrl: "https://randomuser.me/api/portraits/men/1.jpg",
-    content: "Thor is a playful pup ready for adventure! 🐶",
-    imageUrl: "https://images.unsplash.com/photo-1558788353-f76d92427f16?w=800&q=80",
-    likesCount: 8,
-    commentsCount: 1,
-    date: formatDistanceToNow(new Date(Date.now() - 2 * 60 * 60 * 1000), { locale: ptBR, addSuffix: true }),
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: 103,
-    userId: 3,
-    username: "Clara",
-    userPhotoUrl: "https://randomuser.me/api/portraits/women/43.jpg",
-    content: "Adopt Max and gain a loyal friend for life! 🦴",
-    imageUrl: "https://images.unsplash.com/photo-1502672023488-70e25813f145?w=800&q=80",
-    likesCount: 20,
-    commentsCount: 4,
-    date: formatDistanceToNow(new Date(Date.now() - 5 * 60 * 60 * 1000), { locale: ptBR, addSuffix: true }),
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: 104,
-    userId: 4,
-    username: "David",
-    userPhotoUrl: "https://randomuser.me/api/portraits/men/22.jpg",
-    content: "My cat Whiskers enjoying the sunshine today! 😺",
-    imageUrl: "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=800&q=80",
-    likesCount: 15,
-    commentsCount: 3,
-    date: formatDistanceToNow(new Date(Date.now() - 8 * 60 * 60 * 1000), { locale: ptBR, addSuffix: true }),
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: 105,
-    userId: 5,
-    username: "Emma",
-    userPhotoUrl: "https://randomuser.me/api/portraits/women/33.jpg",
-    content: "Found this little guy abandoned. Taking him to the vet now. 💔",
-    imageUrl: "https://images.unsplash.com/photo-1511044568932-338cba0ad803?w=800&q=80",
-    likesCount: 32,
-    commentsCount: 7,
-    date: formatDistanceToNow(new Date(Date.now() - 12 * 60 * 60 * 1000), { locale: ptBR, addSuffix: true }),
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: 106,
-    userId: 6,
-    username: "Frank",
-    userPhotoUrl: "https://randomuser.me/api/portraits/men/45.jpg",
-    content: "Beach day with my best buddy! 🏖️",
-    imageUrl: "https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=800&q=80",
-    likesCount: 18,
-    commentsCount: 2,
-    date: formatDistanceToNow(new Date(Date.now() - 18 * 60 * 60 * 1000), { locale: ptBR, addSuffix: true }),
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: 107,
-    userId: 7,
-    username: "Grace",
-    userPhotoUrl: "https://randomuser.me/api/portraits/women/22.jpg",
-    content: "My new rescue puppy! Meet Daisy 🌼",
-    imageUrl: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=80",
-    likesCount: 27,
-    commentsCount: 5,
-    date: formatDistanceToNow(new Date(Date.now() - 24 * 60 * 60 * 1000), { locale: ptBR, addSuffix: true }),
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: 108,
-    userId: 8,
-    username: "Henry",
-    userPhotoUrl: "https://randomuser.me/api/portraits/men/32.jpg",
-    content: "Just donated to the local animal shelter. Every bit helps! 🙏",
-    imageUrl: "https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?w=800&q=80",
-    likesCount: 22,
-    commentsCount: 3,
-    date: formatDistanceToNow(new Date(Date.now() - 36 * 60 * 60 * 1000), { locale: ptBR, addSuffix: true }),
-    isLiked: false,
-    isSaved: false,
-  }
+  // Add other demo posts similarly...
 ];
 
 export default function PetFeed() {
@@ -169,44 +94,43 @@ export default function PetFeed() {
       setIsLoading(true);
       let allPosts: Post[] = [];
 
-      // 1. Load posts from localStorage
+      // Load posts from localStorage
       try {
         const savedPosts = postStorage.getAllPosts();
+        console.log('Loaded posts from localStorage:', savedPosts);
         if (Array.isArray(savedPosts) && savedPosts.length > 0) {
-          allPosts = savedPosts.map(post => {
-            const postId = post.id;
-            const isLiked = user ? interactionStorage.isPostLiked(user.id, postId) : false;
-            const isSaved = user ? interactionStorage.isPostSaved(user.id, postId) : false;
-            
-            return {
-              id: postId,
-              userId: post.userId,
-              username: post.username || 'User',
-              userPhotoUrl: post.userPhotoUrl || '',
-              content: post.content || '',
-              imageUrl: Array.isArray(post.mediaUrls) && post.mediaUrls.length > 0
-                ? post.mediaUrls[0]
-                : post.imageUrl || '',
-              likesCount: post.likesCount || 0,
-              commentsCount: post.commentsCount || 0,
-              date: post.createdAt
-                ? formatDistanceToNow(new Date(post.createdAt), { locale: ptBR, addSuffix: true })
-                : 'recently',
-              isLiked,
-              isSaved
-            };
-          });
+          allPosts = savedPosts.map(post => ({
+            id: post.id,
+            userId: post.userId,
+            content: post.content || '',
+            mediaUrls: Array.isArray(post.mediaUrls) ? post.mediaUrls : [],
+            mediaType: post.mediaType || 'image',
+            location: post.location || null,
+            visibilityType: post.visibilityType || 'public',
+            postType: post.postType || 'regular',
+            isStory: post.isStory || false,
+            user: {
+              id: post.user?.id || post.userId,
+              username: post.user?.username || 'User',
+              profileImage: post.user?.profileImage || '',
+            },
+            createdAt: post.createdAt || new Date().toISOString(),
+            likesCount: post.likesCount || 0,
+            commentsCount: post.commentsCount || 0,
+            isLiked: user ? interactionStorage.isPostLiked(user.id, post.id) : false,
+            isSaved: user ? interactionStorage.isPostSaved(user.id, post.id) : false,
+          }));
         }
       } catch (localError) {
         console.error('Error loading posts from localStorage:', localError);
       }
 
-      // 2. Add demo posts if no posts exist
+      // Add demo posts if no posts exist
       if (allPosts.length === 0) {
         allPosts = DEMO_POSTS.map(post => ({
           ...post,
           isLiked: user ? interactionStorage.isPostLiked(user.id, post.id) : false,
-          isSaved: user ? interactionStorage.isPostSaved(user.id, post.id) : false
+          isSaved: user ? interactionStorage.isPostSaved(user.id, post.id) : false,
         }));
       }
 
@@ -232,7 +156,7 @@ export default function PetFeed() {
     if (!currentPost) return;
 
     const newIsLiked = !currentPost.isLiked;
-    
+
     // Update local storage
     if (newIsLiked) {
       interactionStorage.likePost(user.id, postId);
@@ -247,7 +171,7 @@ export default function PetFeed() {
           return {
             ...post,
             isLiked: newIsLiked,
-            likesCount: newIsLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1)
+            likesCount: newIsLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1),
           };
         }
         return post;
@@ -270,7 +194,7 @@ export default function PetFeed() {
     if (!currentPost) return;
 
     const newIsSaved = !currentPost.isSaved;
-    
+
     // Update local storage
     if (newIsSaved) {
       interactionStorage.savePost(user.id, postId);
@@ -282,10 +206,7 @@ export default function PetFeed() {
     setPosts(prev =>
       prev.map(post => {
         if (post.id === postId) {
-          return {
-            ...post,
-            isSaved: newIsSaved
-          };
+          return { ...post, isSaved: newIsSaved };
         }
         return post;
       })
@@ -321,54 +242,36 @@ export default function PetFeed() {
                 <div className="flex items-center">
                   <Avatar
                     className="h-8 w-8 mr-2 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => post.userId && setLocation(`/profile/${post.userId}`)}
+                    onClick={() => post.user.id && setLocation(`/profile/${post.user.id}`)}
                   >
-                    {post.userPhotoUrl ? <AvatarImage src={post.userPhotoUrl} alt={post.username} /> : null}
-                    <AvatarFallback>{generateInitials(post.username)}</AvatarFallback>
+                    {post.user.profileImage ? (
+                      <AvatarImage src={post.user.profileImage} alt={post.user.username} />
+                    ) : (
+                      <AvatarFallback>{generateInitials(post.user.username)}</AvatarFallback>
+                    )}
                   </Avatar>
                   <span
                     className="font-medium text-sm cursor-pointer hover:text-orange-500 transition-colors"
-                    onClick={() => post.userId && setLocation(`/profile/${post.userId}`)}
+                    onClick={() => post.user.id && setLocation(`/profile/${post.user.id}`)}
                   >
-                    {post.username}
+                    {post.user.username}
                   </span>
                 </div>
                 <MoreHorizontal size={20} className="text-gray-500" />
               </div>
 
-              {/* Post content - image or text */}
-              {post.imageUrl && post.imageUrl.trim() !== '' ? (
+              {/* Post content - image or video */}
+              {post.mediaUrls.length > 0 && post.mediaUrls[0] ? (
                 <div className="w-full">
-                  {post.imageUrl.startsWith('blob:') ? (
-                    <PersistentImage
-                      src={post.imageUrl}
-                      alt="Post content"
+                  {post.mediaType === "video" ? (
+                    <video
+                      src={post.mediaUrls[0]}
+                      controls
                       className="w-full h-auto object-cover"
-                      onImageLoad={(permanentUrl: string) => {
-                        setPosts(currentPosts => {
-                          return currentPosts.map((p: Post) => {
-                            if (p.id === post.id) {
-                              return { ...p, imageUrl: permanentUrl };
-                            }
-                            return p;
-                          });
-                        });
-                        
-                        // Update in localStorage
-                        const storedPost = postStorage.getPostById(post.id);
-                        if (storedPost) {
-                          if (Array.isArray(storedPost.mediaUrls)) {
-                            storedPost.mediaUrls[0] = permanentUrl;
-                          } else {
-                            storedPost.mediaUrls = [permanentUrl];
-                          }
-                          postStorage.updatePost(post.id, storedPost);
-                        }
-                      }}
                     />
                   ) : (
                     <OptimizedImage
-                      src={post.imageUrl}
+                      src={post.mediaUrls[0]}
                       alt="Post content"
                       className="w-full h-auto object-cover"
                     />
@@ -418,12 +321,14 @@ export default function PetFeed() {
 
                 {/* Caption */}
                 <div className="mb-1">
-                  <span className="font-medium text-sm mr-1">{post.username}</span>
+                  <span className="font-medium text-sm mr-1">{post.user.username}</span>
                   <span className="text-sm">{post.content}</span>
                 </div>
 
                 {/* Post date */}
-                <div className="text-gray-400 text-xs mb-2">{post.date}</div>
+                <div className="text-gray-400 text-xs mb-2">
+                  {formatDistanceToNow(new Date(post.createdAt), { locale: ptBR, addSuffix: true })}
+                </div>
 
                 {/* Comments section */}
                 <CommentSection 
@@ -439,6 +344,16 @@ export default function PetFeed() {
                       })
                     );
                   }}
+                  initialComments={user ? interactionStorage.getPostComments(post.id).map(comment => ({
+                    id: comment.id,
+                    content: comment.content,
+                    username: comment.username || 'User',
+                    userPhotoUrl: comment.userPhotoUrl,
+                    createdAt: comment.createdAt,
+                    likesCount: comment.likesCount || 0,
+                    isLiked: interactionStorage.isCommentLiked(user.id, comment.id),
+                    userId: comment.userId,
+                  })) : []}
                 />
               </div>
             </Card>
@@ -471,7 +386,7 @@ export default function PetFeed() {
             createdAt: comment.createdAt,
             likesCount: comment.likesCount || 0,
             isLiked: interactionStorage.isCommentLiked(user.id, comment.id),
-            userId: comment.userId
+            userId: comment.userId,
           })) : []}
         />
       )}

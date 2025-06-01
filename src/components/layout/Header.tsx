@@ -40,12 +40,12 @@ export default function Header({
         <div className="flex items-center space-x-4">
           <Link href="/store">
             <Button variant="ghost" size="icon" className="text-black hover:text-black/80">
-              <Store size={28} />
+              <Store size={32} />
             </Button>
           </Link>
           <Link href="/chat">
             <Button variant="ghost" size="icon" className="text-black hover:text-black/80">
-              <MessageCircle size={28} />
+              <MessageCircle size={32} />
             </Button>
           </Link>
           <Link href="/profile">

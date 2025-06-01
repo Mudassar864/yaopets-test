@@ -552,3 +552,17 @@ body.native-app {
 .animate-slide-up {
   animation: slideUp 0.3s ease-out forwards;
 }
+.comments-scrollable::-webkit-scrollbar {
+  width: 8px;
+}
+.comments-scrollable::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+.comments-scrollable::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+.comments-scrollable::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
